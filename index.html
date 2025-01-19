@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SkySphere Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.122.0/build/three.module.js';
+    import { FlyControls } from './FlyControls.js';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.set(0, 50, 100);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new FlyControls(camera, renderer.domElement);
+    controls.movementSpeed = 50;
+    controls.rollSpeed = Math.PI / 24;
+    controls.autoForward = false;
+    controls.dragToLook = true;
+
+    const clock = new THREE.Clock();
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(0, 1, 0);
+    scene.add(directionalLight);
+
+    const loader = new THREE.TextureLoader();
+    loader.load('./terrainTexture.jpg', function (texture) {
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+        const terrainMaterial = new THREE.MeshLambertMaterial({ map: texture });
+        const terrainGeometry = new THREE.SphereGeometry(50, 32, 32);
+        const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+        scene.add(terrain);
+    });
+
+    loader.load('./backgroundTexture.jpg', function (texture) {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        const backgroundGeometry = new THREE.SphereGeometry(1500, 32, 32);
+        const backgroundMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+        const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+        scene.add(background);
+    });
+
+    window.addEventListener('resize', function () {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+    });
+    const maxCameraDistance = 500; // Adjust this value as needed
+
+
+    // Mobile touch control variables
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let cameraRotationX = 0;
+    let cameraRotationY = 0;
+    let pinchStartDistance = 0;
+
+    // Set up event listeners for touch controls
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+
+    function handleTouchStart(event) {
+        if (event.touches.length === 1) {
+            // Pan and tilt
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        }
+        if (event.touches.length === 2) {
+            // Pinch to zoom
+            const dx = event.touches[1].clientX - event.touches[0].clientX;
+            const dy = event.touches[1].clientY - event.touches[0].clientY;
+            pinchStartDistance = Math.sqrt(dx * dx + dy * dy);
+        }
+    }
+
+    function handleTouchMove(event) {
+        if (event.touches.length === 1) {
+            // Pan and tilt
+            const deltaX = event.touches[0].clientX - touchStartX;
+            const deltaY = event.touches[0].clientY - touchStartY;
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+
+            const rotationFactor = 0.005;
+  
+
+    cameraRotationY -= deltaX * rotationFactor;
+    cameraRotationX -= deltaY * rotationFactor;
+  
+
+            // Limit camera rotation vertically
+            cameraRotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotationX));
+
+            camera.rotation.x = cameraRotationX;
+            camera.rotation.y = cameraRotationY;
+        }
+        if (event.touches.length === 2) {
+            // Pinch to zoom
+            const dx = event.touches[1].clientX - event.touches[0].clientX;
+            const dy = event.touches[1].clientY - event.touches[0].clientY;
+            const pinchCurrentDistance = Math.sqrt(dx * dx + dy * dy);
+
+            const deltaDistance = pinchCurrentDistance - pinchStartDistance;
+            const zoomSpeed = 0.1;
+
+            camera.fov += deltaDistance * zoomSpeed;
+            camera.fov = Math.max(10, Math.min(100, camera.fov)); // Limit FOV
+            camera.updateProjectionMatrix();
+
+            pinchStartDistance = pinchCurrentDistance;
+
+            // Update camera position based on zoom
+            const zoomFactor = Math.tan(THREE.Math.degToRad(camera.fov) / 2);
+            const distance = (window.innerHeight / 2) / zoomFactor;
+            camera.position.set(0, 0, distance);
+        }
+    }
+
+    function handleTouchEnd(event) {
+        if (event.touches.length === 1) {
+            // Reset pinch start distance when one finger is lifted
+            pinchStartDistance = 0;
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        controls.update(delta);
+        renderer.render(scene, camera);
+
+        // Limit how far the camera can move away from the center
+if (camera.position.length() > maxCameraDistance) {
+    camera.position.setLength(maxCameraDistance);
+}
+    }
+
+    animate();
+</script>
+</body>
+</html>
