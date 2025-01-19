@@ -21,7 +21,7 @@ Sky Sphere Flight is a 3D interactive experience built with [Three.js](https://t
 
 ## Live Demo
 
-Experience the simulation live: [Sky Sphere Flight Demo](https://rafabeznos.com.br/sky_sphere_flight)
+Experience the simulation live: [Sky Sphere Flight Demo](https://rafabeznos.com.br/fx/three_dee/index.html)
 
 ---
 
