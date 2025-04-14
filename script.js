@@ -302,19 +302,26 @@ const submitScoreBtn = document.getElementById('submitScoreBtn');
 const highScoreDisplayDiv = document.getElementById('highScoreDisplay');
 
 
-async function fetchHighScores() {
-    try {
-        const response = await fetch(highScoreUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const scores = await response.json();
-        displayHighScores(scores);
-    } catch (error) {
-        console.error("Could not fetch high scores:", error);
-        highScoresListElement.innerHTML = '<li>Error loading scores</li>';
-    }
- }
+ async function fetchHighScores() {
+     try {
+         const response = await fetch(highScoreUrl);
+         if (!response.ok) {
+             // Try to get more specific error message from the server response body
+             let errorText = response.statusText; // Default to status text
+             try {
+                 errorText = await response.text(); // Attempt to read response body
+             } catch (textError) {
+                 // Ignore error if reading text fails, stick with statusText
+             }
+             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+         }
+         const scores = await response.json();
+         displayHighScores(scores);
+     } catch (error) {
+         console.error("Could not fetch high scores:", error.message); // Log the detailed error
+         highScoresListElement.innerHTML = '<li>Error loading scores. Check console for details.</li>';
+     }
+  }
 
  // Function to actually send the score to the server
  async function submitScoreToServer(playerName, playerScore, playerTime) {
@@ -327,14 +334,21 @@ async function fetchHighScores() {
             body: JSON.stringify({ name: playerName, score: playerScore, time: playerTime }),
         });
         if (!response.ok) {
-             throw new Error(`HTTP error! status: ${response.status}`);
-        }
-         // After saving successfully, fetch the updated list
-         await fetchHighScores();
-     } catch (error) {
-         console.error("Could not save high score:", error);
-         // Even if saving fails, try to fetch existing scores
-         await fetchHighScores();
+             // Try to get more specific error message from the server response body
+             let errorText = response.statusText; // Default to status text
+             try {
+                 errorText = await response.text(); // Attempt to read response body
+             } catch (textError) {
+                 // Ignore error if reading text fails, stick with statusText
+             }
+             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+         }
+          // After saving successfully, fetch the updated list
+          await fetchHighScores();
+      } catch (error) {
+          console.error("Could not save high score:", error.message); // Log the detailed error
+          // Even if saving fails, try to fetch existing scores
+          await fetchHighScores();
          // Optionally inform the user score wasn't saved
     } finally {
         // Show the high score list and restart button regardless of save success/failure
@@ -346,12 +360,12 @@ async function fetchHighScores() {
 function displayHighScores(scores) {
     highScoresListElement.innerHTML = ''; // Clear previous list
     if (scores && scores.length > 0) {
-        scores.forEach((entry, index) => {
-            const li = document.createElement('li');
-            // Display score and time. Lower time is better.
-            li.textContent = `${index + 1}. ${entry.name} - Score: ${entry.score}, Time: ${entry.time.toFixed(2)}s`;
-            highScoresListElement.appendChild(li);
-        });
+         scores.forEach((entry, index) => {
+             const li = document.createElement('li');
+             // Display time prominently, then name. Score is less relevant if always the same.
+             li.textContent = `${index + 1}. ${entry.time.toFixed(2)}s - ${entry.name}`; // (Score: ${entry.score}) - Can add score back if needed
+             highScoresListElement.appendChild(li);
+         });
     } else {
         highScoresListElement.innerHTML = '<li>No high scores yet!</li>';
     }

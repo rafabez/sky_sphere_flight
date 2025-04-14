@@ -39,13 +39,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $score = intval($data['score']); // Ensure integer
         $time = floatval($data['time']); // Ensure float
 
-        // Load existing high scores
-        $highScores = getHighScores($highScoreFile, 100); // Load more than needed temporarily
+        // Load existing high scores (load all to ensure correct sorting)
+        $highScores = getHighScores($highScoreFile, PHP_INT_MAX);
         // Add the new score
         $highScores[] = ['name' => $name, 'score' => $score, 'time' => $time];
 
-        // Sort and save the updated high scores
-        $highScores = getHighScores($highScoreFile, $maxScores); // Re-sort and limit
+        // Sort the combined list (existing + new)
+        usort($highScores, function($a, $b) {
+            // Sort primarily by time (ascending), then score (descending)
+            if ($a['time'] == $b['time']) {
+                 return $b['score'] <=> $a['score']; // Descending score for tie-break
+            }
+            return $a['time'] <=> $b['time']; // Ascending time
+        });
+
+        // Limit to the maximum number of scores
+        $highScores = array_slice($highScores, 0, $maxScores);
+
+        // Save the final sorted and limited high scores
         saveHighScores($highScoreFile, $highScores);
     } else {
         http_response_code(400); // Bad Request
