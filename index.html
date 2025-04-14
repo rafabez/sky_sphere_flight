@@ -25,7 +25,7 @@
                 <ul>
                     <li>The <strong style="color:#00ff00;">GREEN</strong> ring is your next target.</li>
                     <li>The <strong style="color:#ffff00;">YELLOW</strong> arrow points towards the next target ring.</li>
-                    <li><strong style="color:#ff0000;">RED</strong> rings are ones you've already passed through.</li>
+                    <li><strong style="color:#0000ff;">BLUE</strong> rings are ones you've already passed through.</li>
                     <li><strong style="color:#aaaaaa;">GREY</strong> rings are further along the course.</li>
                 </ul>
             </li>
@@ -52,7 +52,8 @@
                 </ul>
             </li>
         </ul>
-        <p>Click the close button (top right) or press <span class="key">Escape</span> to start.</p>
+        <p>Click the close button (top right), press <span class="key">Escape</span>, or click the button below to start.</p>
+        <button id="startGameBtn" class="modal-start-btn">Start Game</button>
     </div>
 </div>
 
@@ -63,12 +64,18 @@
         <p>Your Score: <strong id="finalScore">0</strong></p>
         <p>Your Time: <strong id="finalTime">0.00</strong> seconds</p>
         <hr>
-        <h3>High Scores (Top 5)</h3>
-        <ol id="highScoresList">
-            <li>Loading...</li>
-        </ol>
-        <!-- Optional: Add a button to play again -->
-        <!-- <button id="playAgainBtn">Play Again</button> -->
+        <div id="highScoreEntry">
+            <label for="playerNameInput">Enter Your Name:</label>
+            <input type="text" id="playerNameInput" maxlength="15" placeholder="Pilot">
+            <button id="submitScoreBtn" class="modal-submit-btn">Submit Score</button>
+        </div>
+        <div id="highScoreDisplay" style="display: none;"> <!-- Initially hidden -->
+            <h3>High Scores (Top 5)</h3>
+            <ol id="highScoresList">
+                <li>Loading...</li>
+            </ol>
+            <button id="restartGameBtn" class="modal-restart-btn">Restart Game</button>
+        </div>
     </div>
 </div>
 

@@ -270,6 +270,7 @@ animate();
 // Modal Logic
 const modal = document.getElementById('instructionsModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
+const startGameBtn = document.getElementById('startGameBtn'); // Get the new button
 
 function closeModal() {
     modal.style.display = 'none';
@@ -277,6 +278,7 @@ function closeModal() {
 }
 
 closeModalBtn.addEventListener('click', closeModal);
+startGameBtn.addEventListener('click', closeModal); // Add listener to the new button
 
 // Close modal with Escape key
 window.addEventListener('keydown', (event) => {
@@ -294,6 +296,11 @@ const finalScoreElement = document.getElementById('finalScore');
 const finalTimeElement = document.getElementById('finalTime');
 const highScoresListElement = document.getElementById('highScoresList');
 const highScoreUrl = 'highscore.php'; // Path to your PHP script
+const highScoreEntryDiv = document.getElementById('highScoreEntry');
+const playerNameInput = document.getElementById('playerNameInput');
+const submitScoreBtn = document.getElementById('submitScoreBtn');
+const highScoreDisplayDiv = document.getElementById('highScoreDisplay');
+
 
 async function fetchHighScores() {
     try {
@@ -307,13 +314,10 @@ async function fetchHighScores() {
         console.error("Could not fetch high scores:", error);
         highScoresListElement.innerHTML = '<li>Error loading scores</li>';
     }
-}
+ }
 
-async function saveHighScore(playerScore, playerTime) {
-     // Simple prompt for name, replace with better UI if needed
-    const playerName = prompt("Enter your name for the high score list:", "Pilot") || "Anonymous";
-    if (!playerName) return; // User cancelled
-
+ // Function to actually send the score to the server
+ async function submitScoreToServer(playerName, playerScore, playerTime) {
     try {
         const response = await fetch(highScoreUrl, {
             method: 'POST',
@@ -325,13 +329,19 @@ async function saveHighScore(playerScore, playerTime) {
         if (!response.ok) {
              throw new Error(`HTTP error! status: ${response.status}`);
         }
-        // After saving, fetch the updated list
-        await fetchHighScores();
-    } catch (error) {
-        console.error("Could not save high score:", error);
+         // After saving successfully, fetch the updated list
+         await fetchHighScores();
+     } catch (error) {
+         console.error("Could not save high score:", error);
+         // Even if saving fails, try to fetch existing scores
+         await fetchHighScores();
          // Optionally inform the user score wasn't saved
+    } finally {
+        // Show the high score list and restart button regardless of save success/failure
+        highScoreEntryDiv.style.display = 'none';
+        highScoreDisplayDiv.style.display = 'block';
     }
-}
+ }
 
 function displayHighScores(scores) {
     highScoresListElement.innerHTML = ''; // Clear previous list
@@ -347,17 +357,30 @@ function displayHighScores(scores) {
     }
 }
 
-function showFinishScreen() {
-    finalScoreElement.textContent = score;
-    finalTimeElement.textContent = finalTime.toFixed(2);
-    finishModal.style.display = 'flex'; // Show the finish modal
-    saveHighScore(score, finalTime); // Attempt to save score and then fetch/display
-}
+ function showFinishScreen() {
+     finalScoreElement.textContent = score;
+     finalTimeElement.textContent = finalTime.toFixed(2);
+     playerNameInput.value = ''; // Clear previous name entry
+     highScoreEntryDiv.style.display = 'block'; // Show name entry
+     highScoreDisplayDiv.style.display = 'none'; // Hide score list initially
+     finishModal.style.display = 'flex'; // Show the finish modal
 
-// Optional: Add Play Again button logic if you uncomment the button
-// const playAgainBtn = document.getElementById('playAgainBtn');
-// if (playAgainBtn) {
-//     playAgainBtn.addEventListener('click', () => {
-//         window.location.reload(); // Simple way to restart
-//     });
-// }
+     // We no longer call saveHighScore directly here.
+     // It will be called when the submit button is clicked.
+ }
+
+ // Add event listener for the submit score button
+ submitScoreBtn.addEventListener('click', () => {
+    const playerName = playerNameInput.value.trim() || "Pilot"; // Get name or default
+    // Disable button to prevent multiple submissions? Optional.
+    // submitScoreBtn.disabled = true;
+    submitScoreToServer(playerName, score, finalTime); // Call the function to save and fetch
+ });
+
+ // Restart Game button logic
+ const restartGameBtn = document.getElementById('restartGameBtn');
+ if (restartGameBtn) {
+     restartGameBtn.addEventListener('click', () => {
+         window.location.reload(); // Simple way to restart
+     });
+ }
